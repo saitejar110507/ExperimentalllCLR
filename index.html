@@ -21,7 +21,7 @@
     </script>
     <style>
         .shimmer {
-            background: linear-gradient(90deg, rgba(243, 244, 246, 0.5) 25%, rgba(229, 231, 235, 0.5) 37%, rgba(243, 244, 246, 0.5) 63%);
+            background: linear-gradient(90deg, rgba(8, 10, 14, 0.5) 25%, rgba(229, 231, 235, 0.5) 37%, rgba(243, 244, 246, 0.5) 63%);
             background-size: 400% 100%;
             animation: shimmer 1.5s ease infinite;
         }
@@ -206,108 +206,7 @@
     
     <script>
         // Sample data - in a real app, this would come from an API
-        const sampleFiles = [
-            {
-                id: 1,
-                name: "Introduction to Computer Science",
-                type: "pdf",
-                size: "2.4 MB",
-                sizeBytes: 2516582,
-                date: "2023-10-15",
-                url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-                previewUrl: "https://docs.google.com/viewer?url=https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf&embedded=true"
-            },
-            {
-                id: 2,
-                name: "Advanced Mathematics Lecture Notes",
-                type: "doc",
-                size: "1.8 MB",
-                sizeBytes: 1887436,
-                date: "2023-09-28",
-                url: "https://calibre-ebook.com/downloads/demos/demo.docx",
-                previewUrl: "https://docs.google.com/viewer?url=https://calibre-ebook.com/downloads/demos/demo.docx&embedded=true"
-            },
-            {
-                id: 3,
-                name: "Chemistry Lab Tutorial",
-                type: "video",
-                size: "45.2 MB",
-                sizeBytes: 47395616,
-                date: "2023-10-05",
-                url: "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
-                previewUrl: "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"
-            },
-            {
-                id: 4,
-                name: "History of Art Presentation",
-                type: "pdf",
-                size: "5.1 MB",
-                sizeBytes: 5347737,
-                date: "2023-08-17",
-                url: "https://www.africau.edu/images/default/sample.pdf",
-                previewUrl: "https://docs.google.com/viewer?url=https://www.africau.edu/images/default/sample.pdf&embedded=true"
-            },
-            {
-                id: 5,
-                name: "Programming Exercises",
-                type: "zip",
-                size: "12.3 MB",
-                sizeBytes: 12897484,
-                date: "2023-10-10",
-                url: "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-zip-file.zip",
-                previewUrl: null
-            },
-            {
-                id: 6,
-                name: "Physics Formulas Cheat Sheet",
-                type: "pdf",
-                size: "0.8 MB",
-                sizeBytes: 838860,
-                date: "2023-10-18",
-                url: "https://www.antennahouse.com/hubfs/xsl-fo-sample/pdf/basic-link-1.pdf",
-                previewUrl: "https://docs.google.com/viewer?url=https://www.antennahouse.com/hubfs/xsl-fo-sample/pdf/basic-link-1.pdf&embedded=true"
-            },
-            {
-                id: 7,
-                name: "Literature Analysis Template",
-                type: "doc",
-                size: "2.1 MB",
-                sizeBytes: 2202009,
-                date: "2023-09-15",
-                url: "https://www.cmu.edu/blackboard/files/evaluate/tests-example.xlsx",
-                previewUrl: "https://docs.google.com/viewer?url=https://www.cmu.edu/blackboard/files/evaluate/tests-example.xlsx&embedded=true"
-            },
-            {
-                id: 8,
-                name: "Biology Lab Video Guide",
-                type: "video",
-                size: "78.5 MB",
-                sizeBytes: 82313216,
-                date: "2023-10-12",
-                url: "https://samplelib.com/lib/preview/mp4/sample-10s.mp4",
-                previewUrl: "https://samplelib.com/lib/preview/mp4/sample-10s.mp4"
-            },
-            {
-                id: 9,
-                name: "Research Paper Collection",
-                type: "zip",
-                size: "32.7 MB",
-                sizeBytes: 34288435,
-                date: "2023-07-22",
-                url: "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-zip-file.zip",
-                previewUrl: null
-            },
-            {
-                id: 10,
-                name: "Economics Textbook Chapter 1",
-                type: "pdf",
-                size: "3.9 MB",
-                sizeBytes: 4089446,
-                date: "2023-10-01",
-                url: "https://www.clickdimensions.com/links/TestPDFfile.pdf",
-                previewUrl: "https://docs.google.com/viewer?url=https://www.clickdimensions.com/links/TestPDFfile.pdf&embedded=true"
-            }
-        ];
+        
         
         // DOM elements
         const filesContainer = document.getElementById('filesContainer');
@@ -341,9 +240,29 @@
                 document.documentElement.classList.add('dark');
             }
             
-            // Load files
-            currentFiles = [...sampleFiles];
-            filterAndDisplayFiles();
+            // Load files from Telegram API
+            fetch('https://collage-resources.onrender.com/api/files')
+              .then(res => res.json())
+              .then(data => {
+                currentFiles = data.map((file, index) => {
+                  const previewable = ['pdf', 'doc', 'docx', 'video'].includes(file.filetype);
+                  return {
+                    id: index,
+                    name: file.filename,
+                    type: file.filetype,
+                    sizeBytes: file.filesize,
+                    size: formatBytes(file.filesize),
+                    date: file.date,
+                    url: `/view?url=${encodeURIComponent(file.download_url)}`,
+                    previewUrl: previewable ? `https://docs.google.com/viewer?url=${encodeURIComponent(file.download_url)}&embedded=true` : null
+                  };
+                });
+                filterAndDisplayFiles();
+              })
+              .catch(err => {
+                console.error('Failed to fetch files:', err);
+                document.getElementById('noResults').classList.remove('hidden');
+              });
             
             // Set up event listeners
             searchInput.addEventListener('input', debounce(filterAndDisplayFiles, 300));
@@ -588,6 +507,14 @@
             return new Date(dateString).toLocaleDateString(undefined, options);
         }
         
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         function debounce(func, wait) {
             let timeout;
             return function() {
