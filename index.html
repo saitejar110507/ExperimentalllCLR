@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Learning Resources</title>
+    <script src="script.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .shimmer {
+            background: linear-gradient(90deg, rgba(243, 244, 246, 0.5) 25%, rgba(229, 231, 235, 0.5) 37%, rgba(243, 244, 246, 0.5) 63%);
+            background-size: 400% 100%;
+            animation: shimmer 1.5s ease infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0 50%;
+            }
+        }
+        
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .dark ::-webkit-scrollbar-track {
+            background: #374151;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb {
+            background: #6b7280;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">College Learning Resources</h1>
+                <p class="text-gray-600 dark:text-gray-400">Browse educational resources</p>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Search files..." 
+                           class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full md:w-64 transition-all">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                
+                <!-- Dark mode toggle -->
+                <button id="darkModeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium">Filter:</span>
+                <select id="filterType" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    <option value="all">All Files</option>
+                    <option value="pdf">PDFs</option>
+                    <option value="doc">Documents</option>
+                    <option value="video">Videos</option>
+                    <option value="zip">ZIPs</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium">Sort by:</span>
+                <select id="sortBy" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="size-asc">Size (Smallest)</option>
+                    <option value="size-desc">Size (Largest)</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- File count -->
+        <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            Showing <span id="fileCount" class="font-medium">0</span> files
+        </div>
+        
+        <!-- Files grid -->
+        <div id="filesContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+            <!-- Shimmer loading placeholders -->
+            <div class="shimmer h-40 rounded-xl"></div>
+            <div class="shimmer h-40 rounded-xl"></div>
+            <div class="shimmer h-40 rounded-xl"></div>
+            <div class="shimmer h-40 rounded-xl"></div>
+            <div class="shimmer h-40 rounded-xl"></div>
+            <div class="shimmer h-40 rounded-xl"></div>
+        </div>
+        
+        <!-- Load more button -->
+        <div class="text-center mb-8">
+            <button id="loadMoreBtn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors hidden">
+                Load More
+            </button>
+        </div>
+        
+        <!-- No results message -->
+        <div id="noResults" class="text-center py-12 hidden">
+            <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
+            <h3 class="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No files found</h3>
+            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search or filters</p>
+        </div>
+    </div>
+    
+    <!-- File viewer modal -->
+    <div id="fileViewerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="modalTitle" class="text-lg font-medium truncate max-w-[80%]"></h3>
+                <button id="closeModalBtn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-auto p-4">
+                <iframe id="fileViewerFrame" class="w-full h-full min-h-[70vh] border border-gray-200 dark:border-gray-700 rounded-lg" frameborder="0"></iframe>
+            </div>
+            
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <span id="modalFileType"></span>
+                    <span>•</span>
+                    <span id="modalFileSize"></span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button id="downloadModalBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Sample data - in a real app, this would come from an API
+        const sampleFiles = [
+            {
+                id: 1,
+                name: "Introduction to Computer Science",
+                type: "pdf",
+                size: "2.4 MB",
+                sizeBytes: 2516582,
+                date: "2023-10-15",
+                url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                previewUrl: "https://docs.google.com/viewer?url=https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf&embedded=true"
+            },
+            {
+                id: 2,
+                name: "Advanced Mathematics Lecture Notes",
+                type: "doc",
+                size: "1.8 MB",
+                sizeBytes: 1887436,
+                date: "2023-09-28",
+                url: "https://calibre-ebook.com/downloads/demos/demo.docx",
+                previewUrl: "https://docs.google.com/viewer?url=https://calibre-ebook.com/downloads/demos/demo.docx&embedded=true"
+            },
+            {
+                id: 3,
+                name: "Chemistry Lab Tutorial",
+                type: "video",
+                size: "45.2 MB",
+                sizeBytes: 47395616,
+                date: "2023-10-05",
+                url: "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+                previewUrl: "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"
+            },
+            {
+                id: 4,
+                name: "History of Art Presentation",
+                type: "pdf",
+                size: "5.1 MB",
+                sizeBytes: 5347737,
+                date: "2023-08-17",
+                url: "https://www.africau.edu/images/default/sample.pdf",
+                previewUrl: "https://docs.google.com/viewer?url=https://www.africau.edu/images/default/sample.pdf&embedded=true"
+            },
+            {
+                id: 5,
+                name: "Programming Exercises",
+                type: "zip",
+                size: "12.3 MB",
+                sizeBytes: 12897484,
+                date: "2023-10-10",
+                url: "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-zip-file.zip",
+                previewUrl: null
+            },
+            {
+                id: 6,
+                name: "Physics Formulas Cheat Sheet",
+                type: "pdf",
+                size: "0.8 MB",
+                sizeBytes: 838860,
+                date: "2023-10-18",
+                url: "https://www.antennahouse.com/hubfs/xsl-fo-sample/pdf/basic-link-1.pdf",
+                previewUrl: "https://docs.google.com/viewer?url=https://www.antennahouse.com/hubfs/xsl-fo-sample/pdf/basic-link-1.pdf&embedded=true"
+            },
+            {
+                id: 7,
+                name: "Literature Analysis Template",
+                type: "doc",
+                size: "2.1 MB",
+                sizeBytes: 2202009,
+                date: "2023-09-15",
+                url: "https://www.cmu.edu/blackboard/files/evaluate/tests-example.xlsx",
+                previewUrl: "https://docs.google.com/viewer?url=https://www.cmu.edu/blackboard/files/evaluate/tests-example.xlsx&embedded=true"
+            },
+            {
+                id: 8,
+                name: "Biology Lab Video Guide",
+                type: "video",
+                size: "78.5 MB",
+                sizeBytes: 82313216,
+                date: "2023-10-12",
+                url: "https://samplelib.com/lib/preview/mp4/sample-10s.mp4",
+                previewUrl: "https://samplelib.com/lib/preview/mp4/sample-10s.mp4"
+            },
+            {
+                id: 9,
+                name: "Research Paper Collection",
+                type: "zip",
+                size: "32.7 MB",
+                sizeBytes: 34288435,
+                date: "2023-07-22",
+                url: "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-zip-file.zip",
+                previewUrl: null
+            },
+            {
+                id: 10,
+                name: "Economics Textbook Chapter 1",
+                type: "pdf",
+                size: "3.9 MB",
+                sizeBytes: 4089446,
+                date: "2023-10-01",
+                url: "https://www.clickdimensions.com/links/TestPDFfile.pdf",
+                previewUrl: "https://docs.google.com/viewer?url=https://www.clickdimensions.com/links/TestPDFfile.pdf&embedded=true"
+            }
+        ];
+        
+        // DOM elements
+        const filesContainer = document.getElementById('filesContainer');
+        const searchInput = document.getElementById('searchInput');
+        const filterType = document.getElementById('filterType');
+        const sortBy = document.getElementById('sortBy');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const noResults = document.getElementById('noResults');
+        const fileCount = document.getElementById('fileCount');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const fileViewerModal = document.getElementById('fileViewerModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const fileViewerFrame = document.getElementById('fileViewerFrame');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalFileType = document.getElementById('modalFileType');
+        const modalFileSize = document.getElementById('modalFileSize');
+        const downloadModalBtn = document.getElementById('downloadModalBtn');
+        
+        // State
+        let currentFiles = [];
+        let displayedFiles = [];
+        let currentPage = 1;
+        const filesPerPage = 8;
+        let currentFile = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for dark mode preference
+            if (localStorage.getItem('darkMode') === 'true' || 
+                (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Load files
+            currentFiles = [...sampleFiles];
+            filterAndDisplayFiles();
+            
+            // Set up event listeners
+            searchInput.addEventListener('input', debounce(filterAndDisplayFiles, 300));
+            filterType.addEventListener('change', filterAndDisplayFiles);
+            sortBy.addEventListener('change', filterAndDisplayFiles);
+            loadMoreBtn.addEventListener('click', loadMoreFiles);
+            darkModeToggle.addEventListener('click', toggleDarkMode);
+            closeModalBtn.addEventListener('click', closeModal);
+            downloadModalBtn.addEventListener('click', downloadCurrentFile);
+        });
+        
+        // Functions
+        function filterAndDisplayFiles() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filterValue = filterType.value;
+            const sortValue = sortBy.value;
+            
+            // Filter files
+            displayedFiles = currentFiles.filter(file => {
+                const matchesSearch = file.name.toLowerCase().includes(searchTerm);
+                const matchesFilter = filterValue === 'all' || file.type === filterValue;
+                return matchesSearch && matchesFilter;
+            });
+            
+            // Sort files
+            displayedFiles.sort((a, b) => {
+                switch (sortValue) {
+                    case 'date-desc':
+                        return new Date(b.date) - new Date(a.date);
+                    case 'date-asc':
+                        return new Date(a.date) - new Date(b.date);
+                    case 'name-asc':
+                        return a.name.localeCompare(b.name);
+                    case 'name-desc':
+                        return b.name.localeCompare(a.name);
+                    case 'size-asc':
+                        return a.sizeBytes - b.sizeBytes;
+                    case 'size-desc':
+                        return b.sizeBytes - a.sizeBytes;
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Reset pagination
+            currentPage = 1;
+            
+            // Display files
+            displayFiles();
+        }
+        
+        function displayFiles() {
+            const startIndex = 0;
+            const endIndex = Math.min(currentPage * filesPerPage, displayedFiles.length);
+            const filesToShow = displayedFiles.slice(startIndex, endIndex);
+            
+            if (filesToShow.length === 0) {
+                filesContainer.classList.add('hidden');
+                noResults.classList.remove('hidden');
+                loadMoreBtn.classList.add('hidden');
+            } else {
+                filesContainer.classList.remove('hidden');
+                noResults.classList.add('hidden');
+                
+                // Clear container
+                filesContainer.innerHTML = '';
+                
+                // Add files
+                filesToShow.forEach(file => {
+                    const fileCard = createFileCard(file);
+                    filesContainer.appendChild(fileCard);
+                });
+                
+                // Show/hide load more button
+                if (endIndex < displayedFiles.length) {
+                    loadMoreBtn.classList.remove('hidden');
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
+            }
+            
+            // Update file count
+            fileCount.textContent = displayedFiles.length;
+        }
+        
+        function loadMoreFiles() {
+            currentPage++;
+            const startIndex = 0;
+            const endIndex = Math.min(currentPage * filesPerPage, displayedFiles.length);
+            const filesToShow = displayedFiles.slice(startIndex, endIndex);
+            
+            // Clear container and re-add all files (simpler than tracking what's already shown)
+            filesContainer.innerHTML = '';
+            
+            filesToShow.forEach(file => {
+                const fileCard = createFileCard(file);
+                filesContainer.appendChild(fileCard);
+            });
+            
+            // Show/hide load more button
+            if (endIndex < displayedFiles.length) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+        }
+        
+        function createFileCard(file) {
+            const card = document.createElement('div');
+            card.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col';
+            
+            // File icon based on type
+            let iconClass, iconColor, typeText;
+            switch (file.type) {
+                case 'pdf':
+                    iconClass = 'fa-file-pdf';
+                    iconColor = 'text-red-500';
+                    typeText = 'PDF Document';
+                    break;
+                case 'doc':
+                    iconClass = 'fa-file-word';
+                    iconColor = 'text-blue-500';
+                    typeText = 'Word Document';
+                    break;
+                case 'video':
+                    iconClass = 'fa-file-video';
+                    iconColor = 'text-purple-500';
+                    typeText = 'Video';
+                    break;
+                case 'zip':
+                    iconClass = 'fa-file-archive';
+                    iconColor = 'text-yellow-500';
+                    typeText = 'ZIP Archive';
+                    break;
+                default:
+                    iconClass = 'fa-file';
+                    iconColor = 'text-gray-500';
+                    typeText = 'File';
+            }
+            
+            // Card content
+            card.innerHTML = `
+                <div class="p-4 flex-1 flex flex-col">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700">
+                            <i class="fas ${iconClass} ${iconColor} text-2xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-medium text-lg truncate" title="${file.name}">${file.name}</h3>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">${typeText}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            <span>${file.size}</span>
+                            <span>${formatDate(file.date)}</span>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            ${file.previewUrl ? `
+                            <button class="view-btn flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2" 
+                                    data-id="${file.id}" title="View file">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            ` : `
+                            <button class="flex-1 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium text-gray-400 cursor-not-allowed flex items-center justify-center gap-2" 
+                                    title="Preview not available">
+                                <i class="fas fa-eye-slash"></i> View
+                            </button>
+                            `}
+                            
+                            <button class="download-btn flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2" 
+                                    data-id="${file.id}" title="Download file">
+                                <i class="fas fa-download"></i> 
+                                <span class="hidden sm:inline">Download</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners
+            if (file.previewUrl) {
+                card.querySelector('.view-btn').addEventListener('click', () => openModal(file));
+            }
+            card.querySelector('.download-btn').addEventListener('click', () => downloadFile(file));
+            
+            return card;
+        }
+        
+        function openModal(file) {
+            currentFile = file;
+            modalTitle.textContent = file.name;
+            modalFileSize.textContent = file.size;
+            
+            // Set file type text
+            let typeText;
+            switch (file.type) {
+                case 'pdf': typeText = 'PDF Document'; break;
+                case 'doc': typeText = 'Word Document'; break;
+                case 'video': typeText = 'Video File'; break;
+                case 'zip': typeText = 'ZIP Archive'; break;
+                default: typeText = 'File';
+            }
+            modalFileType.textContent = typeText;
+            
+            // Set iframe source
+            fileViewerFrame.src = file.previewUrl;
+            
+            // Show modal
+            fileViewerModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal() {
+            fileViewerModal.classList.add('hidden');
+            document.body.style.overflow = '';
+            fileViewerFrame.src = '';
+            currentFile = null;
+        }
+        
+        function downloadCurrentFile() {
+            if (currentFile) {
+                downloadFile(currentFile);
+            }
+        }
+        
+        function downloadFile(file) {
+            // In a real app, this would trigger the download
+            // For demo purposes, we'll open in a new tab
+            window.open(file.url, '_blank');
+        }
+        
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark);
+        }
+        
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
+    </script>
+</body>
+</html>
